@@ -1,2 +1,67 @@
 # crypto-market-bridge
 Crypto Real-Time Market Data Bridge
+
+
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Crypto Market Bridge</title>
+<style>
+body{background:#101827;color:white;font-family:Arial;padding:20px}
+main{max-width:700px;margin:auto}
+input,select,button{padding:12px;margin:6px 0;border-radius:8px}
+button{background:#16a34a;color:white;border:0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1e293b;padding:12px}
+</style>
+</head>
+<body>
+<main>
+<h1>Crypto Market Bridge</h1>
+<p>Binance Market Data</p>
+<label>Coin Pair</label><br>
+<input id="symbol" value="BTCUSDT"><br>
+<label>Timeframe</label><br>
+<select id="interval">
+<option>15m</option><option>1h</option>
+<option>4h</option><option>1d</option><option>1w</option>
+</select><br>
+<button id="load">Ambil Data Binance</button>
+<button id="copy">Salin Data untuk AI</button>
+<h3>Hasil Analisis Data</h3>
+<pre id="output">Siap mengambil data Binance.</pre>
+</main>
+<script>
+const output=document.getElementById("output");
+document.getElementById("load").onclick=async()=>{
+ const symbol=document.getElementById("symbol").value.trim().toUpperCase();
+ const interval=document.getElementById("interval").value;
+ output.textContent="Mengambil data...";
+ try{
+  const url="https://data-api.binance.vision/api/v3/klines?symbol="+encodeURIComponent(symbol)+"&interval="+encodeURIComponent(interval)+"&limit=100";
+  const r=await fetch(url);
+  const d=await r.json();
+  if(!r.ok)throw Error(d.msg||"API error");
+  const candles=d.map(k=>({
+   time:new Date(k[0]).toISOString(),
+   open:+k[1],high:+k[2],low:+k[3],
+   close:+k[4],volume:+k[5]
+  }));
+  output.textContent=JSON.stringify({
+   source:"Binance Public API",
+   symbol,interval,
+   latest:candles[candles.length-1],
+   candles
+  },null,2);
+ }catch(e){output.textContent="Gagal: "+e.message;}
+};
+document.getElementById("copy").onclick=async()=>{
+ try{
+  await navigator.clipboard.writeText(output.textContent);
+  alert("Data disalin!");
+ }catch(e){alert("Silakan salin data secara manual.");}
+};
+</script>
+</body>
+</html>
