@@ -6,74 +6,59 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Crypto Market Bridge</title>
 <style>
-body{font-family:Arial;background:#101827;color:#fff;padding:20px}
+body{background:#101827;color:white;font-family:Arial;padding:20px}
 main{max-width:700px;margin:auto}
-input,select,button{padding:12px;margin:5px 0;border-radius:8px;border:0}
-button{background:#16a34a;color:white;font-weight:bold}
-pre{white-space:pre-wrap;background:#1e293b;padding:15px;border-radius:8px}
+input,select,button{padding:12px;margin:6px 0;border-radius:8px}
+button{background:#16a34a;color:white;border:0}
+pre{white-space:pre-wrap;overflow-wrap:anywhere;background:#1e293b;padding:12px}
 </style>
 </head>
 <body>
 <main>
 <h1>Crypto Market Bridge</h1>
-<p>Binance Public Market Data</p>
-
-<label>Pair</label><br>
-<input id="symbol" value="BTCUSDT">
-<br>
+<p>Binance Market Data</p>
+<label>Coin Pair</label><br>
+<input id="symbol" value="BTCUSDT"><br>
 <label>Timeframe</label><br>
 <select id="interval">
 <option>15m</option><option>1h</option>
 <option>4h</option><option>1d</option><option>1w</option>
-</select>
-<br>
-<button onclick="loadData()">Ambil Data Binance</button>
-<button onclick="copyData()">Salin Data untuk AI</button>
-<pre id="output">Menunggu permintaan data...</pre>
+</select><br>
+<button id="load">Ambil Data Binance</button>
+<button id="copy">Salin Data untuk AI</button>
+<h3>Hasil Analisis Data</h3>
+<pre id="output">Siap mengambil data Binance.</pre>
 </main>
-
 <script>
-async function loadData(){
- const output=document.getElementById("output");
+const output=document.getElementById("output");
+document.getElementById("load").onclick=async()=>{
  const symbol=document.getElementById("symbol").value.trim().toUpperCase();
  const interval=document.getElementById("interval").value;
- if(!/^[A-Z0-9]{5,20}$/.test(symbol)){
-  output.textContent="Pair tidak valid.";
-  return;
- }
  output.textContent="Mengambil data...";
  try{
-  const url=`https://data-api.binance.vision/api/v3/klines?symbol=${encodeURIComponent(symbol)}&interval=${encodeURIComponent(interval)}&limit=100`;
-  const response=await fetch(url);
-  const data=await response.json();
-  if(!response.ok) throw new Error(data.msg||"Binance API error");
-  const candles=data.map(k=>({
+  const url="https://data-api.binance.vision/api/v3/klines?symbol="+encodeURIComponent(symbol)+"&interval="+encodeURIComponent(interval)+"&limit=100";
+  const r=await fetch(url);
+  const d=await r.json();
+  if(!r.ok)throw Error(d.msg||"API error");
+  const candles=d.map(k=>({
    time:new Date(k[0]).toISOString(),
-   open:Number(k[1]),high:Number(k[2]),
-   low:Number(k[3]),close:Number(k[4]),
-   volume:Number(k[5])
+   open:+k[1],high:+k[2],low:+k[3],
+   close:+k[4],volume:+k[5]
   }));
-  const price=candles[candles.length-1].close;
   output.textContent=JSON.stringify({
    source:"Binance Public API",
    symbol,interval,
-   latest_close:price,
+   latest:candles[candles.length-1],
    candles
   },null,2);
- }catch(e){
-  output.textContent="Gagal mengambil data: "+e.message;
- }
-}
-function copyData(){
- const text=document.getElementById("output").textContent;
- if(!text||text.includes("Menunggu")||text.includes("Mengambil")){
-  alert("Ambil data terlebih dahulu.");
-  return;
- }
- navigator.clipboard.writeText(text)
- .then(()=>alert("Data berhasil disalin!"))
- .catch(()=>alert("Salin data secara manual."));
-}
+ }catch(e){output.textContent="Gagal: "+e.message;}
+};
+document.getElementById("copy").onclick=async()=>{
+ try{
+  await navigator.clipboard.writeText(output.textContent);
+  alert("Data disalin!");
+ }catch(e){alert("Silakan salin data secara manual.");}
+};
 </script>
 </body>
 </html>
